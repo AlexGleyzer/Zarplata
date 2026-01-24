@@ -1,0 +1,10 @@
+# база даних і бекапи
+data/payroll.db
+data/backups/
+
+# node / react
+node_modules/
+dist/
+
+# системне
+.DS_Store
