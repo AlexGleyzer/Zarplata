@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import './App.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
-
+const API_URL = 'http://localhost:8000/api/v1';
 function App() {
   const [command, setCommand] = useState('');
   const [chips, setChips] = useState([]);
