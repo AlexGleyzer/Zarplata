@@ -1,0 +1,22 @@
+{
+  "name": "zarplata",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "migrate": "node scripts/migrate.js",
+    "check": "node scripts/check_schema.js",
+    "data": "node scripts/show_data.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:55284/git/AlexGleyzer/Zarplata"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^12.6.2"
+  }
+}
