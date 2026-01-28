@@ -5,6 +5,14 @@ data/backups/
 # node / react
 node_modules/
 dist/
+dist-vite/
+
+# electron-builder
+*.blockmap
+*.snap
 
 # системне
 .DS_Store
+*.log
+.env
+.env.local
