@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: payroll_postgres
+    environment:
+      POSTGRES_DB: payroll
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secure_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=uk_UA.UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d payroll"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payroll_network
+
+  backend:
+    build: ./backend
+    container_name: payroll_backend
+    environment:
+      DATABASE_URL: postgresql://admin:secure_password@postgres:5432/payroll
+      PYTHONUNBUFFERED: 1
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - payroll_network
+
+  frontend:
+    build: ./frontend
+    container_name: payroll_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - payroll_network
+
+volumes:
+  postgres_data:
+
+networks:
+  payroll_network:
+    driver: bridge

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run migrate:*)",
+      "Bash(sqlite3:*)",
+      "Bash(node scripts/check_schema.js:*)",
+      "Bash(node scripts/show_data.js:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
