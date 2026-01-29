@@ -2,24 +2,27 @@ from app.models.module1 import (
     OrganizationalUnit,
     Employee,
     Contract,
-    CalculationRule,
+    #CalculationRule,
     CalculationTemplate,
-    TemplateRule
+    TemplateRule,
+    Group,              # НОВЕ!
+    Position,           # НОВЕ!
+    PositionGroup,      # НОВЕ!
+    ShiftSchedule,      # НОВЕ!
+    PositionSchedule,   # НОВЕ!
 )
-
 from app.models.module2 import (
     WorkResult,
     Timesheet,
     ProductionResult
 )
-
 from app.models.module3 import (
     CalculationPeriod,
     AccrualDocument,
     AccrualResult,
-    ChangeRequest
+    ChangeRequest,
+    SplitReason,        # НОВЕ!
 )
-
 from app.models.module4 import (
     PaymentRule,
     PaymentDocument,
@@ -32,9 +35,14 @@ __all__ = [
     "OrganizationalUnit",
     "Employee",
     "Contract",
-    "CalculationRule",
+   # "CalculationRule",
     "CalculationTemplate",
     "TemplateRule",
+    "Group",
+    "Position",
+    "PositionGroup",
+    "ShiftSchedule",
+    "PositionSchedule",
     # Module 2
     "WorkResult",
     "Timesheet",
@@ -44,6 +52,7 @@ __all__ = [
     "AccrualDocument",
     "AccrualResult",
     "ChangeRequest",
+    "SplitReason",
     # Module 4
     "PaymentRule",
     "PaymentDocument",
