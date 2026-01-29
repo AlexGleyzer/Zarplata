@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Numeric, Text, Date
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Numeric, Text, Date, CheckConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -27,17 +27,36 @@ class Timesheet(Base):
     __tablename__ = "timesheets"
     
     id = Column(Integer, primary_key=True)
-    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False, index=True)
-    work_date = Column(Date, nullable=False, index=True)
-    hours_worked = Column(Numeric(5, 2), nullable=False)
-    minutes_worked = Column(Integer, default=0)
     
-    status = Column(String(20), default="draft", nullable=False, index=True)
+    # Зв'язок з позицією
+    position_id = Column(Integer, ForeignKey("positions.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Точний час роботи
+    work_start = Column(DateTime(timezone=True), nullable=False, index=True)
+    work_end = Column(DateTime(timezone=True), nullable=False, index=True)
+    
+    # Тривалість
+    duration_minutes = Column(Integer)
+    break_minutes = Column(Integer, default=0, server_default="0")
+    overtime_minutes = Column(Integer, default=0, server_default="0")
+    
+    # Тип зміни
+    shift_type = Column(String(20))
+    
+    # Статус
+    status = Column(String(20), default="draft", server_default="'draft'", index=True)
+    
+    # Метадані
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    created_by = Column(String(100), nullable=False)
+    created_by = Column(String(100), nullable=False, server_default="'migration_v2'")
+    notes = Column(Text)
     
-    employee = relationship("Employee")
+    # Relationships
+    position = relationship("Position", back_populates="timesheets")
+    
+    def __repr__(self):
+        return f"<Timesheet(id={self.id}, position_id={self.position_id})>"
 
 
 class ProductionResult(Base):

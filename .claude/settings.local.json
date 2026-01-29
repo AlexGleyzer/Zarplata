@@ -6,7 +6,18 @@
       "Bash(node scripts/check_schema.js:*)",
       "Bash(node scripts/show_data.js:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(pip:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker-compose exec:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(docker-compose restart:*)",
+      "Bash(curl:*)",
+      "Bash(timeout 5 tail:*)",
+      "Bash(exit 0)",
+      "Bash(timeout 3 cmd /c \"type C:\\\\Users\\\\frien\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Work-zarplata\\\\tasks\\\\b61e092.output\")"
     ]
   }
 }

@@ -2,7 +2,7 @@ from app.models.module1 import (
     OrganizationalUnit,
     Employee,
     Contract,
-    #CalculationRule,
+    CalculationRule,
     CalculationTemplate,
     TemplateRule,
     Group,              # НОВЕ!
@@ -35,7 +35,7 @@ __all__ = [
     "OrganizationalUnit",
     "Employee",
     "Contract",
-   # "CalculationRule",
+    "CalculationRule",
     "CalculationTemplate",
     "TemplateRule",
     "Group",

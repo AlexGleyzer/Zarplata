@@ -37,6 +37,7 @@ class CalculationPeriod(Base):
     organizational_unit = relationship("OrganizationalUnit")
     employee = relationship("Employee")
     accrual_documents = relationship("AccrualDocument", back_populates="period")
+    payment_documents = relationship("PaymentDocument", back_populates="period")
     
     def __repr__(self):
         return f"<CalculationPeriod(id={self.id}, code='{self.period_code}')>"
@@ -73,7 +74,7 @@ class AccrualDocument(Base):
     
     # Relationships
     period = relationship("CalculationPeriod", back_populates="accrual_documents")
-    template = relationship("CalculationTemplate")
+    template = relationship("CalculationTemplate", back_populates="accrual_documents")
     organizational_unit = relationship("OrganizationalUnit")
     employee = relationship("Employee")
     results = relationship("AccrualResult", back_populates="document", cascade="all, delete-orphan")
@@ -115,9 +116,11 @@ class AccrualResult(Base):
     
     # Relationships
     document = relationship("AccrualDocument", back_populates="results")
-    position = relationship("Position")  # НОВЕ!
+    position = relationship("Position", back_populates="accrual_results")  # НОВЕ!
     employee = relationship("Employee")
     organizational_unit = relationship("OrganizationalUnit")
+    rule = relationship("CalculationRule")
+    payment_items = relationship("PaymentItem", back_populates="accrual_result")
     
     def __repr__(self):
         return f"<AccrualResult(id={self.id}, rule_code='{self.rule_code}', amount={self.amount})>"

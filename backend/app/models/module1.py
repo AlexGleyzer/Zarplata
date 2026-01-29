@@ -113,8 +113,8 @@ class Position(Base):
     employee = relationship("Employee", back_populates="positions")
     organizational_unit = relationship("OrganizationalUnit", back_populates="positions")
     position_groups = relationship("PositionGroup", back_populates="position", cascade="all, delete-orphan")
-    contracts = relationship("Contract", back_populates="position", cascade="all, delete-orphan")
     position_schedules = relationship("PositionSchedule", back_populates="position", cascade="all, delete-orphan")
+    contracts = relationship("Contract", back_populates="position", cascade="all, delete-orphan")
     timesheets = relationship("Timesheet", back_populates="position", cascade="all, delete-orphan")
     accrual_results = relationship("AccrualResult", back_populates="position")
     
@@ -164,70 +164,83 @@ class Group(Base):
     def __repr__(self):
         return f"<Group(id={self.id}, code='{self.code}', name='{self.name}', level={self.level})>"
 class OrganizationalUnit(Base):
-    """Організаційна структура"""
     __tablename__ = "organizational_units"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    parent_id = Column(Integer, ForeignKey("organizational_units.id"), nullable=True)
+
+    id = Column(Integer, primary_key=True)
+    parent_id = Column(Integer, ForeignKey("organizational_units.id", ondelete="SET NULL"))
+
+    # Ідентифікація
     code = Column(String(50), unique=True, nullable=False, index=True)
     name = Column(String(255), nullable=False)
-    level = Column(Integer, nullable=False)  # 1-6
-    is_active = Column(Boolean, default=True, nullable=False)
+
+    # Ієрархія
+    level = Column(Integer, nullable=False, default=1)
+
+    # Метадані
+    is_active = Column(Boolean, default=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     # Relationships
     parent = relationship("OrganizationalUnit", remote_side=[id], backref="children")
-    employees = relationship("Employee", back_populates="organizational_unit")
-    contracts = relationship("Contract", back_populates="organizational_unit")
-    calculation_rules = relationship("CalculationRule", back_populates="organizational_unit")
+    positions = relationship("Position", back_populates="organizational_unit")
+
+    # Constraints
+    __table_args__ = (
+        CheckConstraint('id != parent_id', name='org_unit_check'),
+        CheckConstraint('level > 0', name='org_unit_level_check'),
+    )
+
+    def __repr__(self):
+        return f"<OrganizationalUnit(id={self.id}, code='{self.code}', name='{self.name}')>"
 
 
 class Employee(Base):
-    """Працівники"""
     __tablename__ = "employees"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    organizational_unit_id = Column(Integer, ForeignKey("organizational_units.id"), nullable=False)
-    personnel_number = Column(String(20), unique=True, nullable=False, index=True)
+
+    id = Column(Integer, primary_key=True)
+
+    # Ідентифікація
+    personnel_number = Column(String(50), unique=True, nullable=False, index=True)
+    tax_number = Column(String(50), index=True)
+
+    # ПІБ
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
-    middle_name = Column(String(100), nullable=True)
+    middle_name = Column(String(100))
+
+    # Дати
+    birth_date = Column(Date)
     hire_date = Column(Date, nullable=False)
-    termination_date = Column(Date, nullable=True)
-    is_active = Column(Boolean, default=True, nullable=False)
+    termination_date = Column(Date)
+
+    # Контактна інформація
+    email = Column(String(255))
+    phone = Column(String(50))
+    address = Column(Text)
+
+    # Статус
+    status = Column(String(20), default='active')  # active, on_leave, terminated
+
+    # Метадані
+    is_active = Column(Boolean, default=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
-    # Relationships
-    organizational_unit = relationship("OrganizationalUnit", back_populates="employees")
-    contracts = relationship("Contract", back_populates="employee")
-    work_results = relationship("WorkResult", back_populates="employee")
-    timesheets = relationship("Timesheet", back_populates="employee")
-    production_results = relationship("ProductionResult", back_populates="employee")
-    accrual_results = relationship("AccrualResult", back_populates="employee")
+    created_by = Column(String(100), nullable=False)
+
+    # Relationships (v2.0: employees connect to org units through positions)
+    positions = relationship("Position", back_populates="employee", cascade="all, delete-orphan")
+
+    # Constraints
+    __table_args__ = (
+        CheckConstraint('termination_date IS NULL OR termination_date >= hire_date',
+                       name='employee_dates_check'),
+    )
+
+    def __repr__(self):
+        return f"<Employee(id={self.id}, personnel_number='{self.personnel_number}', name='{self.first_name} {self.last_name}')>"
 
 
-class Contract(Base):
-    """Контракти працівників"""
-    __tablename__ = "contracts"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
-    organizational_unit_id = Column(Integer, ForeignKey("organizational_units.id"), nullable=False)
-    contract_number = Column(String(50), unique=True, nullable=False)
-    contract_type = Column(String(20), nullable=False)  # hourly, salary, piecework, task_based
-    start_date = Column(Date, nullable=False)
-    end_date = Column(Date, nullable=True)
-    base_rate = Column(Numeric(12, 2), nullable=False)
-    currency = Column(String(3), default="UAH", nullable=False)
-    is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
-    # Relationships
-    employee = relationship("Employee", back_populates="contracts")
-    organizational_unit = relationship("OrganizationalUnit", back_populates="contracts")
 
 
 class PositionSchedule(Base):
@@ -259,7 +272,81 @@ class PositionSchedule(Base):
     def __repr__(self):
         return f"<PositionSchedule(position_id={self.position_id}, schedule_id={self.schedule_id})>"
 
+class Contract(Base):
+    __tablename__ = "contracts"
 
+    id = Column(Integer, primary_key=True)
+
+    # Зв'язок з позицією (v2.0)
+    position_id = Column(Integer, ForeignKey("positions.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # Тип контракту
+    contract_type = Column(String(20), nullable=False, index=True)  # salary, hourly, piecework, task_based
+
+    # Умови оплати
+    base_rate = Column(Numeric(12, 2), nullable=False)
+    currency = Column(String(3), default="UAH")
+
+    # Період дії (TIMESTAMP для точності!)
+    start_datetime = Column(DateTime(timezone=True), nullable=False, index=True)
+    end_datetime = Column(DateTime(timezone=True), index=True)
+
+    # Статус
+    is_active = Column(Boolean, default=True, index=True)
+
+    # Метадані
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_by = Column(String(100), nullable=False)
+    notes = Column(Text)
+
+    # Relationships
+    position = relationship("Position", back_populates="contracts")
+
+    # Constraints
+    __table_args__ = (
+        CheckConstraint('base_rate >= 0', name='contract_rate_check'),
+        CheckConstraint('end_datetime IS NULL OR end_datetime > start_datetime', name='contract_dates_check'),
+    )
+
+    def __repr__(self):
+        return f"<Contract(id={self.id}, position_id={self.position_id}, type='{self.contract_type}', rate={self.base_rate})>"
+class CalculationRule(Base):
+    """Правила розрахунку - МІНІМАЛЬНА ВЕРСІЯ"""
+    __tablename__ = "calculation_rules"
+    
+    id = Column(Integer, primary_key=True)
+    
+    # Scope (тільки ОДНЕ може бути NOT NULL!)
+    position_id = Column(Integer, ForeignKey("positions.id", ondelete="CASCADE"), index=True)
+    organizational_unit_id = Column(Integer, ForeignKey("organizational_units.id", ondelete="CASCADE"), index=True)
+    group_id = Column(Integer, ForeignKey("groups.id", ondelete="SET NULL"), index=True)
+    
+    # Ідентифікація
+    code = Column(String(50), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    
+    # Логіка
+    sql_code = Column(Text)
+    rule_type = Column(String(20), nullable=False, index=True)
+    
+    # Період дії (TIMESTAMP!)
+    valid_from = Column(DateTime(timezone=True), nullable=False, index=True)
+    valid_until = Column(DateTime(timezone=True), index=True)
+    
+    # Статус
+    is_active = Column(Boolean, default=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_by = Column(String(100), nullable=False)
+    
+    # Relationships (МІНІМУМ)
+    position = relationship("Position")
+    organizational_unit = relationship("OrganizationalUnit")
+    group = relationship("Group", back_populates="calculation_rules")
+    template_rules = relationship("TemplateRule", back_populates="rule")
+
+    def __repr__(self):
+        return f"<CalculationRule(id={self.id}, code='{self.code}')>"
 class CalculationTemplate(Base):
     """Шаблони розрахунків"""
     __tablename__ = "calculation_templates"

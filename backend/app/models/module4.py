@@ -48,6 +48,8 @@ class PaymentDocument(Base):
     # Relationships
     period = relationship("CalculationPeriod", back_populates="payment_documents")
     payment_rule = relationship("PaymentRule", back_populates="payment_documents")
+    organizational_unit = relationship("OrganizationalUnit")
+    employee = relationship("Employee")
     payment_items = relationship("PaymentItem", back_populates="payment_document")
     bank_statements = relationship("BankStatement", back_populates="payment_document")
 
@@ -69,6 +71,7 @@ class PaymentItem(Base):
     # Relationships
     payment_document = relationship("PaymentDocument", back_populates="payment_items")
     accrual_result = relationship("AccrualResult", back_populates="payment_items")
+    employee = relationship("Employee")
 
 
 class BankStatement(Base):

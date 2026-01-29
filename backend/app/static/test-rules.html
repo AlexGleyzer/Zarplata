@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тестування Правил Розрахунку</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 32px; margin-bottom: 10px; }
+        .header p { opacity: 0.9; }
+        .content { padding: 30px; }
+        .section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 24px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px 32px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        .btn:active { transform: translateY(0); }
+        .tree {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .tree-node {
+            padding: 12px;
+            margin: 8px 0;
+            border-left: 3px solid #667eea;
+            background: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tree-node:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+        .tree-node.selected {
+            background: #667eea;
+            color: white;
+            border-left-color: #764ba2;
+        }
+        .tree-node.level-1 { margin-left: 0; }
+        .tree-node.level-2 { margin-left: 30px; }
+        .tree-node.level-3 { margin-left: 60px; }
+        .result {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .result-item {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+        }
+        .result-item.position { border-left-color: #dc3545; }
+        .result-item.group { border-left-color: #ffc107; }
+        .result-item.org-unit { border-left-color: #17a2b8; }
+        .result-item.global { border-left-color: #6c757d; }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .badge.position { background: #dc3545; color: white; }
+        .badge.group { background: #ffc107; color: #333; }
+        .badge.org-unit { background: #17a2b8; color: white; }
+        .badge.global { background: #6c757d; color: white; }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Тестування Правил Розрахунку</h1>
+            <p>Перевірка застосування правил для позицій і груп</p>
+        </div>
+        
+        <div class="content">
+            <!-- Секція 1: Вибір Працівника -->
+            <div class="section">
+                <h2>1️⃣ Оберіть Працівника</h2>
+                <div class="form-group">
+                    <label>Працівник:</label>
+                    <select id="employee-select">
+                        <option value="">-- Оберіть працівника --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Секція 2: Дерево Груп -->
+            <div class="section">
+                <h2>2️⃣ Дерево Груп</h2>
+                <div id="groups-tree" class="tree">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Завантаження груп...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Секція 3: Параметри Тесту -->
+            <div class="section">
+                <h2>3️⃣ Параметри</h2>
+                <div class="form-group">
+                    <label>Код Правила (наприклад: PIT, BASE_SALARY):</label>
+                    <input type="text" id="rule-code" placeholder="PIT" value="PIT">
+                </div>
+                <div class="form-group">
+                    <label>Дата Розрахунку:</label>
+                    <input type="date" id="calc-date" value="2024-01-15">
+                </div>
+                <button class="btn" onclick="testRules()">
+                    🚀 Перевірити Застосування Правил
+                </button>
+            </div>
+
+            <!-- Секція 4: Результат -->
+            <div class="section" id="results-section" style="display: none;">
+                <h2>4️⃣ Результат</h2>
+                <div id="results" class="result"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Завантажити працівників
+        fetch('/api/employees/?limit=100')
+            .then(r => r.json())
+            .then(data => {
+                const select = document.getElementById('employee-select');
+                data.items.forEach(emp => {
+                    const option = document.createElement('option');
+                    option.value = emp.id;
+                    option.textContent = `${emp.personnel_number} - ${emp.first_name} ${emp.last_name}`;
+                    select.appendChild(option);
+                });
+            })
+            .catch(err => {
+                console.error('Error loading employees:', err);
+                document.getElementById('employee-select').innerHTML = '<option>Помилка завантаження</option>';
+            });
+
+        // Завантажити дерево груп
+        fetch('/api/groups/tree')
+            .then(r => r.json())
+            .then(tree => {
+                renderTree(tree, document.getElementById('groups-tree'));
+            })
+            .catch(err => {
+                console.error('Error loading groups:', err);
+                document.getElementById('groups-tree').innerHTML = '<p style="color: red;">Помилка завантаження груп</p>';
+            });
+
+        function renderTree(nodes, container) {
+            container.innerHTML = '';
+            if (!nodes || nodes.length === 0) {
+                container.innerHTML = '<p>Немає груп</p>';
+                return;
+            }
+            nodes.forEach(node => {
+                renderNode(node, container, 1);
+            });
+        }
+
+        function renderNode(node, container, level) {
+            const div = document.createElement('div');
+            div.className = `tree-node level-${level}`;
+            div.dataset.groupId = node.id;
+            div.dataset.groupCode = node.code;
+            div.textContent = `${node.name} (${node.code})`;
+            div.onclick = () => {
+                document.querySelectorAll('.tree-node').forEach(n => n.classList.remove('selected'));
+                div.classList.add('selected');
+            };
+            container.appendChild(div);
+
+            if (node.children && node.children.length > 0) {
+                node.children.forEach(child => renderNode(child, container, level + 1));
+            }
+        }
+
+        function testRules() {
+            const employeeId = document.getElementById('employee-select').value;
+            const selectedGroup = document.querySelector('.tree-node.selected');
+            const ruleCode = document.getElementById('rule-code').value;
+            const calcDate = document.getElementById('calc-date').value;
+
+            if (!employeeId) {
+                alert('Оберіть працівника!');
+                return;
+            }
+
+            if (!ruleCode) {
+                alert('Введіть код правила!');
+                return;
+            }
+
+            // Показати результати (mock)
+            const resultsSection = document.getElementById('results-section');
+            const resultsDiv = document.getElementById('results');
+            
+            resultsSection.style.display = 'block';
+            resultsDiv.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Пошук правил...</p>
+                </div>
+            `;
+
+            // Симуляція пошуку (заміни на реальний API call)
+            setTimeout(() => {
+                const groupName = selectedGroup ? selectedGroup.textContent : 'Не обрано';
+                
+                resultsDiv.innerHTML = `
+                    <h3>Ієрархія Пошуку для Правила: <code>${ruleCode}</code></h3>
+                    
+                    <div class="result-item position">
+                        <strong>🎯 Рівень 1: POSITION</strong>
+                        <span class="badge position">Не знайдено</span>
+                        <p style="margin-top: 10px; color: #666;">
+                            Персональне правило для позиції не знайдено
+                        </p>
+                    </div>
+
+                    ${selectedGroup ? `
+                    <div class="result-item group">
+                        <strong>🏷️ Рівень 2: GROUP</strong>
+                        <span class="badge group">Знайдено!</span>
+                        <p style="margin-top: 10px;">
+                            <strong>Група:</strong> ${groupName}<br>
+                            <strong>Правило:</strong> ${ruleCode}<br>
+                            <strong>Ставка:</strong> 9% (пільга 50%)<br>
+                            <strong>Тип:</strong> tax<br>
+                            <strong>Дійсне з:</strong> 2024-01-01
+                        </p>
+                    </div>
+                    ` : `
+                    <div class="result-item group">
+                        <strong>🏷️ Рівень 2: GROUP</strong>
+                        <span class="badge group">Не обрано</span>
+                        <p style="margin-top: 10px; color: #666;">
+                            Оберіть групу з дерева для перевірки
+                        </p>
+                    </div>
+                    `}
+
+                    <div class="result-item org-unit">
+                        <strong>🏢 Рівень 3: ORG UNIT</strong>
+                        <span class="badge org-unit">Не знайдено</span>
+                        <p style="margin-top: 10px; color: #666;">
+                            Правило для підрозділу не знайдено
+                        </p>
+                    </div>
+
+                    <div class="result-item global">
+                        <strong>🌍 Рівень 4: GLOBAL</strong>
+                        <span class="badge global">Fallback</span>
+                        <p style="margin-top: 10px;">
+                            <strong>Правило:</strong> ${ruleCode}_GLOBAL<br>
+                            <strong>Ставка:</strong> 18% (базова)<br>
+                            <strong>Тип:</strong> tax
+                        </p>
+                    </div>
+
+                    <div style="margin-top: 30px; padding: 20px; background: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+                        <h4 style="color: #155724; margin-bottom: 10px;">✅ Застосовується:</h4>
+                        <p style="font-size: 18px; font-weight: 600; color: #155724;">
+                            ${selectedGroup ? 'Правило з ГРУПИ (рівень 2) - 9%' : 'Глобальне правило (рівень 4) - 18%'}
+                        </p>
+                    </div>
+                `;
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
