@@ -20,6 +20,7 @@
   display: flex;
   justify-content: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .App-header nav button {
@@ -36,6 +37,7 @@
 .App-header nav button:hover {
   background-color: #667eea;
   color: white;
+  transform: translateY(-2px);
 }
 
 .App-header nav button.active {
@@ -44,7 +46,7 @@
 }
 
 .App-main {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 40px auto;
   padding: 0 20px;
 }
@@ -65,6 +67,7 @@
   color: #666;
   font-style: italic;
   margin-bottom: 20px;
+  line-height: 1.6;
 }
 
 .input-container {
@@ -95,11 +98,13 @@
   border-radius: 5px;
   font-size: 1.1rem;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s;
 }
 
 .submit-button:hover:not(:disabled) {
   background-color: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .submit-button:disabled {
@@ -207,6 +212,13 @@
   color: #333;
 }
 
+.loading {
+  text-align: center;
+  padding: 40px;
+  font-size: 1.2rem;
+  color: #666;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -235,6 +247,7 @@ table tbody tr:hover {
   border-radius: 12px;
   font-size: 0.85rem;
   font-weight: 500;
+  display: inline-block;
 }
 
 .status.draft {
@@ -257,6 +270,103 @@ table tbody tr:hover {
   color: #c62828;
 }
 
+.view-button {
+  padding: 6px 16px;
+  background-color: #667eea;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s;
+}
+
+.view-button:hover {
+  background-color: #5568d3;
+  transform: translateY(-1px);
+}
+
+.calculation-details {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.calculation-details h3 {
+  color: #667eea;
+  margin-top: 0;
+}
+
+.calc-header {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+}
+
+.calc-header p {
+  margin: 0;
+  color: #666;
+}
+
+.calc-header strong {
+  color: #333;
+}
+
+.calculation-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 0.9rem;
+}
+
+.rule-name {
+  color: #666;
+}
+
+.rule-amount {
+  color: #333;
+  font-weight: 500;
+}
+
+.amount-line {
+  padding: 4px 0;
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+.positive {
+  color: #2e7d32;
+}
+
+.negative {
+  color: #c62828;
+}
+
+.calc-summary {
+  margin-top: 30px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.calc-summary h4 {
+  margin-top: 0;
+  color: #667eea;
+}
+
+.total-amount {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #2e7d32;
+  margin: 10px 0 0 0;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -268,4 +378,23 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .App-header nav {
+    flex-direction: column;
+  }
+  
+  .App-header nav button {
+    width: 100%;
+  }
+  
+  .input-container {
+    flex-direction: column;
+  }
+  
+  .calc-header {
+    grid-template-columns: 1fr;
+  }
 }

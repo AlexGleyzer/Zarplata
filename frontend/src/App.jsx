@@ -3,13 +3,14 @@ import axios from 'axios';
 import './App.css';
 
 const API_URL = 'http://localhost:8000/api/v1';
+
 function App() {
   const [command, setCommand] = useState('');
   const [chips, setChips] = useState([]);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [view, setView] = useState('command'); // command, employees, periods, calculations
+  const [view, setView] = useState('command');
 
   const parseCommand = (text) => {
     const words = text.toLowerCase().trim().split(/\s+/);
@@ -21,17 +22,17 @@ function App() {
       scopeValue: null
     };
 
-    // Визначити дію
     if (words.includes('створити') || words.includes('create')) {
       parsed.action = 'create';
     }
+    if (words.includes('розрахувати') || words.includes('calculate')) {
+      parsed.action = 'calculate';
+    }
 
-    // Визначити сутність
     if (words.includes('період') || words.includes('period')) {
       parsed.entity = 'period';
     }
 
-    // Визначити період
     const months = {
       'січень': '01', 'лютий': '02', 'березень': '03', 'квітень': '04',
       'травень': '05', 'червень': '06', 'липень': '07', 'серпень': '08',
@@ -43,24 +44,6 @@ function App() {
         parsed.period = `2024-${num}`;
         parsed.periodName = month.charAt(0).toUpperCase() + month.slice(1) + ' 2024';
       }
-    }
-
-    // Визначити scope
-    if (words.includes('відділ') || words.includes('підрозділ')) {
-      parsed.scope = 'unit';
-      // Знайти назву підрозділу після ключового слова
-      const unitIndex = Math.max(words.indexOf('відділ'), words.indexOf('підрозділ'));
-      if (unitIndex >= 0 && unitIndex < words.length - 1) {
-        parsed.scopeValue = words.slice(unitIndex + 1).join(' ');
-      }
-    } else if (words.includes('працівник')) {
-      parsed.scope = 'employee';
-      const empIndex = words.indexOf('працівник');
-      if (empIndex >= 0 && empIndex < words.length - 1) {
-        parsed.scopeValue = words.slice(empIndex + 1).join(' ');
-      }
-    } else if (words.includes('підприємство') || words.includes('компанія')) {
-      parsed.scope = 'company';
     }
 
     return parsed;
@@ -85,32 +68,45 @@ function App() {
     try {
       const parsed = parseCommand(command);
       
-      // Створити чіпи з розпізнаної команди
       const newChips = [];
       if (parsed.action) newChips.push(createChip('Дія', parsed.action));
       if (parsed.entity) newChips.push(createChip('Сутність', parsed.entity));
       if (parsed.period) newChips.push(createChip('Період', parsed.periodName));
-      if (parsed.scope) newChips.push(createChip('Scope', parsed.scope));
-      if (parsed.scopeValue) newChips.push(createChip('Значення', parsed.scopeValue));
       
       setChips(newChips);
 
-      // Виконати команду
       if (parsed.action === 'create' && parsed.entity === 'period') {
         const response = await axios.post(`${API_URL}/periods/`, {
           period_code: parsed.period || '2024-01',
           period_name: parsed.periodName || 'Період',
           start_date: `${parsed.period || '2024-01'}-01`,
           end_date: `${parsed.period || '2024-01'}-31`,
-          period_type: 'monthly',
-          organizational_unit_id: null,
-          employee_id: null
+          period_type: 'monthly'
         });
 
         setResult({
           type: 'success',
           message: `Період створено успішно`,
           data: response.data
+        });
+      } else if (parsed.action === 'calculate' && parsed.period) {
+        // Знайти period_id по коду
+        const periodsResponse = await axios.get(`${API_URL}/periods/`);
+        const period = periodsResponse.data.items.find(p => p.period_code === parsed.period);
+        
+        if (!period) {
+          throw new Error(`Період ${parsed.periodName} не знайдено. Спочатку створіть період.`);
+        }
+
+        const calcResponse = await axios.post(`${API_URL}/calculations/run`, {
+          period_id: period.id,
+          template_code: 'MONTHLY_SALARY'
+        });
+
+        setResult({
+          type: 'success',
+          message: `Розрахунок виконано успішно!`,
+          data: calcResponse.data
         });
       }
     } catch (err) {
@@ -153,7 +149,9 @@ function App() {
           <div className="command-section">
             <h2>Введіть команду</h2>
             <p className="hint">
-              Приклад: "створити період січень для відділу продажів"
+              Приклади: 
+              <br/>• "створити період січень"
+              <br/>• "розрахувати січень"
             </p>
             
             <form onSubmit={handleCommandSubmit}>
@@ -162,7 +160,7 @@ function App() {
                   type="text"
                   value={command}
                   onChange={(e) => setCommand(e.target.value)}
-                  placeholder="створити період..."
+                  placeholder="створити період... або розрахувати..."
                   disabled={loading}
                   className="command-input"
                 />
@@ -206,23 +204,14 @@ function App() {
           </div>
         )}
 
-        {view === 'employees' && (
-          <EmployeesView apiUrl={API_URL} />
-        )}
-
-        {view === 'periods' && (
-          <PeriodsView apiUrl={API_URL} />
-        )}
-
-        {view === 'calculations' && (
-          <CalculationsView apiUrl={API_URL} />
-        )}
+        {view === 'employees' && <EmployeesView apiUrl={API_URL} />}
+        {view === 'periods' && <PeriodsView apiUrl={API_URL} />}
+        {view === 'calculations' && <CalculationsView apiUrl={API_URL} />}
       </main>
     </div>
   );
 }
 
-// Компонент для перегляду працівників
 function EmployeesView({ apiUrl }) {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -239,7 +228,7 @@ function EmployeesView({ apiUrl }) {
       });
   }, [apiUrl]);
 
-  if (loading) return <div>Завантаження...</div>;
+  if (loading) return <div className="loading">Завантаження...</div>;
 
   return (
     <div className="data-view">
@@ -272,7 +261,6 @@ function EmployeesView({ apiUrl }) {
   );
 }
 
-// Компонент для перегляду періодів
 function PeriodsView({ apiUrl }) {
   const [periods, setPeriods] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -289,7 +277,7 @@ function PeriodsView({ apiUrl }) {
       });
   }, [apiUrl]);
 
-  if (loading) return <div>Завантаження...</div>;
+  if (loading) return <div className="loading">Завантаження...</div>;
 
   return (
     <div className="data-view">
@@ -324,12 +312,139 @@ function PeriodsView({ apiUrl }) {
   );
 }
 
-// Компонент для перегляду розрахунків
 function CalculationsView({ apiUrl }) {
+  const [calculations, setCalculations] = useState([]);
+  const [selectedCalc, setSelectedCalc] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    // Отримати всі періоди з документами нарахувань
+    axios.get(`${apiUrl}/periods/`)
+      .then(response => {
+        const periodsWithCalcs = response.data.items.filter(p => 
+          p.accrual_documents && p.accrual_documents.length > 0
+        );
+        setCalculations(periodsWithCalcs);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, [apiUrl]);
+
+  const viewCalculation = async (period) => {
+    if (!period.accrual_documents || period.accrual_documents.length === 0) return;
+    
+    try {
+      const docId = period.accrual_documents[0].id;
+      const response = await axios.get(`${apiUrl}/calculations/${docId}`);
+      setSelectedCalc(response.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  if (loading) return <div className="loading">Завантаження...</div>;
+
   return (
     <div className="data-view">
-      <h2>Розрахунки</h2>
-      <p>Тут будуть відображатися результати розрахунків</p>
+      <h2>Розрахунки Зарплати</h2>
+      
+      {calculations.length === 0 ? (
+        <p>Розрахунків ще немає. Виконайте команду "розрахувати січень" щоб створити перший розрахунок.</p>
+      ) : (
+        <>
+          <h3>Періоди з розрахунками:</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Період</th>
+                <th>Назва</th>
+                <th>Документів</th>
+                <th>Дії</th>
+              </tr>
+            </thead>
+            <tbody>
+              {calculations.map(period => (
+                <tr key={period.id}>
+                  <td>{period.period_code}</td>
+                  <td>{period.period_name}</td>
+                  <td>{period.accrual_documents?.length || 0}</td>
+                  <td>
+                    <button 
+                      onClick={() => viewCalculation(period)}
+                      className="view-button"
+                    >
+                      Переглянути
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {selectedCalc && (
+        <div className="calculation-details">
+          <h3>Деталі Розрахунку</h3>
+          <div className="calc-header">
+            <p><strong>Документ:</strong> {selectedCalc.document_number}</p>
+            <p><strong>Період:</strong> {selectedCalc.period.name}</p>
+            <p><strong>Шаблон:</strong> {selectedCalc.template.name}</p>
+            <p><strong>Статус:</strong> <span className={`status ${selectedCalc.status}`}>{selectedCalc.status}</span></p>
+          </div>
+
+          <h4>Результати по працівниках:</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>Працівник</th>
+                <th>Табельний</th>
+                <th>Нарахування</th>
+                <th>Сума</th>
+                <th>До виплати</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedCalc.employees.map(emp => (
+                <tr key={emp.employee.id}>
+                  <td>{emp.employee.name}</td>
+                  <td>{emp.employee.personnel_number}</td>
+                  <td>
+                    {emp.results.map(r => (
+                      <div key={r.rule_code} className="calculation-line">
+                        <span className="rule-name">{r.rule_name}:</span>
+                        <span className="rule-amount">{r.amount.toFixed(2)} грн</span>
+                      </div>
+                    ))}
+                  </td>
+                  <td>
+                    {emp.results.map(r => (
+                      <div key={r.rule_code} className="amount-line">
+                        {r.amount > 0 ? '+' : ''}{r.amount.toFixed(2)}
+                      </div>
+                    ))}
+                  </td>
+                  <td>
+                    <strong className={emp.total >= 0 ? 'positive' : 'negative'}>
+                      {emp.total.toFixed(2)} грн
+                    </strong>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="calc-summary">
+            <h4>Загальна Сума:</h4>
+            <p className="total-amount">
+              {selectedCalc.employees.reduce((sum, emp) => sum + emp.total, 0).toFixed(2)} грн
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
